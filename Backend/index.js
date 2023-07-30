@@ -11,8 +11,8 @@ const app = express();
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.options("*", cors());
+app.use(cors({ origin: "*" }));
+// app.options("*", cors());
 
 AWS.config.update({
     accessKeyId: process.env.aws_access_key_id,
