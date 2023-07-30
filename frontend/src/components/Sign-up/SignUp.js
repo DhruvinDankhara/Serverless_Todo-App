@@ -19,14 +19,6 @@ const SignUp = () => {
         }
     };
 
-    const handleForgotPassword = () => {
-        navigate("/forgot-password");
-    };
-
-    const handleRegisterNow = () => {
-        navigate("/sign-up");
-    };
-
     useEffect(() => {
         if (localStorage.getItem("token")) {
             navigate("/home");

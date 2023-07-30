@@ -14,20 +14,11 @@ const Login = () => {
 
         const response = await loginApiCall(values);
         if (response) {
-            localStorage.setItem("token", response.data.email);
+            localStorage.setItem("token", response.token);
             localStorage.setItem("username", response.data.firstName);
-            localStorage.setItem("userId", response.data.id);
-            // localStorage.setItem("password", values.password);
+            localStorage.setItem("userId", response.data.userId);
             navigate("/home", { replace: true });
         }
-    };
-
-    const handleForgotPassword = () => {
-        navigate("/forgot-password");
-    };
-
-    const handleRegisterNow = () => {
-        navigate("/sign-up");
     };
 
     useEffect(() => {

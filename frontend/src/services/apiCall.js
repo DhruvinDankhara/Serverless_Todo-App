@@ -1,5 +1,6 @@
 import axios from "axios";
-const BASE_URL = "ec2-52-206-22-233.compute-1.amazonaws.com:3000";
+// const BASE_URL = "http://ec2-52-206-22-233.compute-1.amazonaws.com:3000";
+const BASE_URL = "http://localhost:3000";
 export const fetchTodoApiCall = async () => {
     try {
         const response = await axios.get(
@@ -24,6 +25,7 @@ export const updateStatus = async (id, status) => {
     }
 };
 
+// DONE
 export const loginApiCall = async (data) => {
     try {
         const response = await axios.post(`${BASE_URL}/login`, data);
@@ -35,6 +37,7 @@ export const loginApiCall = async (data) => {
     }
 };
 
+// DONE
 export const signUpApiCall = async (data) => {
     try {
         const response = await axios.post(`${BASE_URL}/sign-up`, data);
