@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 
 // const BASE_URL = "http://ec2-52-206-22-233.compute-1.amazonaws.com:3000";
 const BASE_URL =
-  "https://jhjx6t47d4.execute-api.us-east-1.amazonaws.com/deploy";
+  "https://pehiclftbc.execute-api.us-east-1.amazonaws.com/deploy";
 
 // DONE
 export const loginApiCall = async (data) => {
