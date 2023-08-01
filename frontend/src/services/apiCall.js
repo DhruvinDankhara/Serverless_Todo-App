@@ -1,4 +1,5 @@
 import axios from "axios";
+import ToastMessage from "../components/ToastMessage";
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcryptjs");
 
@@ -15,10 +16,12 @@ export const loginApiCall = async (data) => {
       // TODO:
     };
     const response = await axios.post(`${BASE_URL}/login`, payload);
-    console.log(response.data);
+    console.log("response", response.data);
     return response.data;
   } catch (error) {
-    console.error(error);
+    console.error("Login failed", error.response.data.error);
+    ToastMessage(error.response.data.error, "error");
+
     return null;
   }
 };
@@ -39,6 +42,8 @@ export const signUpApiCall = async (data) => {
     return response.data;
   } catch (error) {
     console.error(error);
+    console.error("Error", error.response.data.error);
+    ToastMessage(error.response.data.error, "error");
     return null;
   }
 };
@@ -86,7 +91,7 @@ export const createTodo = async (data) => {
     };
     const response = await axios.post(`${BASE_URL}/todo/create`, payload);
     console.log(response);
-    return true;
+    return response.data.data;
   } catch (error) {
     console.error(error);
     return {};
