@@ -17,6 +17,9 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
+      Tags:
+        - Key: backup
+          Value: daily
 
   TodoDynamoDBTable:
     Type: AWS::DynamoDB::Table
@@ -34,6 +37,54 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: "5"
         WriteCapacityUnits: "5"
+      Tags:
+        - Key: backup
+          Value: daily
+
+  BackupVault:
+    Type: AWS::Backup::BackupVault
+    Properties:
+      BackupVaultName: default
+      EncryptionKeyArn: !GetAtt BackupVaultKey.Arn
+
+  BackupPlan:
+    Type: AWS::Backup::BackupPlan
+    Properties:
+      BackupPlan:
+        BackupPlanName: default
+        BackupPlanRule:
+          - RuleName: daily-backups
+            TargetBackupVault: !Ref BackupVault
+            ScheduleExpression: cron(0 5 ? * * *)
+            StartWindowMinutes: 60
+            Lifecycle:
+              DeleteAfterDays: 60
+  BackupVaultKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Encryption key for daily
+      Enabled: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Action:
+              - kms:*
+            Resource: "*"
+
+  BackupSelection:
+    Type: AWS::Backup::BackupSelection
+    Properties:
+      BackupSelection:
+        SelectionName: daily-backup-tag
+        IamRoleArn: arn:aws:iam::012511742142:role/LabRole
+        ListOfTags:
+          - ConditionType: STRINGEQUALS
+            ConditionKey: backup
+            ConditionValue: daily
+      BackupPlanId: !Ref "BackupPlan"
 
   SendEmailSNSTopic:
     Type: AWS::SNS::Topic
@@ -148,6 +199,49 @@ Resources:
       IntegrationMethod: POST
       PayloadFormatVersion: "2.0"
       IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SignUpLambda.Arn}/invocations"
+
+  SendTodoEmailLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: SendTodoEmail_CF_function
+      Handler: lambda_functino-send-all-task-email.lambda_handler
+      Runtime: python3.11
+      Role: arn:aws:iam::012511742142:role/LabRole
+      Timeout: 900
+      Code:
+        S3Bucket: cloud-term-project-frontend
+        S3Key: lambda_functino-send-all-task-email.py.zip
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SendEmailSNSTopic
+    DependsOn: SendEmailLambda
+
+  SendTodoEmailLambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SendTodoEmailLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  SendTodoEmailLambdaRoutes:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref APIGateway
+      RouteKey: "GET /sendEmail"
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref SendTodoEmailLambdaIntegration
+
+  SendTodoEmailLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref APIGateway
+      Description: Lambda Integration
+      IntegrationType: AWS_PROXY
+      PayloadFormatVersion: "2.0"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SendTodoEmailLambda.Arn}/invocations"
 
   CreateTodoLambda:
     Type: AWS::Lambda::Function
