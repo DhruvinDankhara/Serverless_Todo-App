@@ -1,0 +1,331 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Resources:
+  UserDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Users
+      TableClass: STANDARD
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      BillingMode: PROVISIONED
+      DeletionProtectionEnabled: false
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+
+  TodoDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Todos
+      TableClass: STANDARD
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PROVISIONED
+      DeletionProtectionEnabled: false
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+
+  SendEmailSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: send_email_CF
+      DisplayName: send_email_CF
+
+  SendEmailLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: SendEmail_CF_function
+      Handler: lambda_function-send-email.lambda_handler
+      Runtime: python3.11
+      Role: arn:aws:iam::012511742142:role/LabRole
+      Timeout: 900
+      Code:
+        S3Bucket: cloud-term-project-frontend
+        S3Key: lambda_function-send-email.py.zip
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SendEmailSNSTopic
+
+    DependsOn: SendEmailSNSTopic
+
+  SendEmailLambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SendEmailLambda
+      Action: lambda:InvokeFunction
+      Principal: "*"
+
+  LoginLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: login_CF_function
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.11
+      Role: arn:aws:iam::012511742142:role/LabRole
+      Timeout: 900
+      Code:
+        S3Bucket: cloud-term-project-frontend
+        S3Key: lambda_function.py.zip
+
+  LoginLambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LoginLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  LoginLambdaRoutes:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref APIGateway
+      RouteKey: "POST /login"
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref LoginLambdaIntegration
+
+  LoginLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref APIGateway
+      Description: Lambda Integration
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      PayloadFormatVersion: "2.0"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LoginLambda.Arn}/invocations"
+
+  SignUpLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: signUp_CF_function
+      Handler: lambda_function-sign-up.lambda_handler
+      Runtime: python3.11
+      Role: arn:aws:iam::012511742142:role/LabRole
+      Timeout: 900
+      Code:
+        S3Bucket: cloud-term-project-frontend
+        S3Key: lambda_function-sign-up.py.zip
+      Environment:
+        Variables:
+          SendEmailFunction: !Ref SendEmailLambda
+    DependsOn: SendEmailLambda
+
+  SignUpLambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SignUpLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  SignUpLambdaRoutes:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref APIGateway
+      RouteKey: "POST /signup"
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref SignUpLambdaIntegration
+
+  SignUpLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref APIGateway
+      Description: Lambda Integration
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      PayloadFormatVersion: "2.0"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SignUpLambda.Arn}/invocations"
+
+  CreateTodoLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: Create_Todo_CF_function
+      Handler: lambda_function-create-todo.lambda_handler
+      Runtime: python3.11
+      Role: arn:aws:iam::012511742142:role/LabRole
+      Timeout: 900
+      Code:
+        S3Bucket: cloud-term-project-frontend
+        S3Key: lambda_function-create-todo.py.zip
+
+  CreateTodoLambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CreateTodoLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  CreateTodoLambdaRoutes:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref APIGateway
+      RouteKey: "POST /todo/create"
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref CreateTodoLambdaIntegration
+
+  CreateTodoLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref APIGateway
+      Description: Lambda Integration
+      IntegrationType: AWS_PROXY
+      IntegrationMethod: POST
+      PayloadFormatVersion: "2.0"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTodoLambda.Arn}/invocations"
+
+  GetTodoLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: Get_Todo_CF_function
+      Handler: lambda_function-get-todo.lambda_handler
+      Runtime: python3.11
+      Role: arn:aws:iam::012511742142:role/LabRole
+      Timeout: 900
+      Code:
+        S3Bucket: cloud-term-project-frontend
+        S3Key: lambda_function-get-todo.py.zip
+
+  GetTodoLambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetTodoLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  GetTodoLambdaRoutes:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref APIGateway
+      RouteKey: "GET /todo"
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref GetTodoLambdaIntegration
+
+  GetTodoLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref APIGateway
+      Description: Lambda Integration
+      IntegrationType: AWS_PROXY
+      # IntegrationMethod: GET
+      PayloadFormatVersion: "2.0"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTodoLambda.Arn}/invocations"
+
+  UpdateTodoLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: Update_Todo_CF_function
+      Handler: lambda_function-update-todo.lambda_handler
+      Runtime: python3.11
+      Role: arn:aws:iam::012511742142:role/LabRole
+      Timeout: 900
+      Code:
+        S3Bucket: cloud-term-project-frontend
+        S3Key: lambda_function-update-todo.py.zip
+
+  UpdateTodoLambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UpdateTodoLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  UpdateTodoLambdaRoutes:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref APIGateway
+      RouteKey: "PUT /todo"
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref UpdateTodoLambdaIntegration
+
+  UpdateTodoLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref APIGateway
+      Description: Lambda Integration
+      IntegrationType: AWS_PROXY
+      # IntegrationMethod: GET
+      PayloadFormatVersion: "2.0"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateTodoLambda.Arn}/invocations"
+
+  DeleteTodoLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: Delete_Todo_CF_function
+      Handler: lambda_function-delete-todo.lambda_handler
+      Runtime: python3.11
+      Role: arn:aws:iam::012511742142:role/LabRole
+      Timeout: 900
+      Code:
+        S3Bucket: cloud-term-project-frontend
+        S3Key: lambda_function-delete-todo.py.zip
+
+  DeleteTodoLambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DeleteTodoLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  DeleteTodoLambdaRoutes:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref APIGateway
+      RouteKey: "DELETE /todo"
+      AuthorizationType: NONE
+      Target: !Join
+        - /
+        - - integrations
+          - !Ref DeleteTodoLambdaIntegration
+
+  DeleteTodoLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref APIGateway
+      Description: Lambda Integration
+      IntegrationType: AWS_PROXY
+      # IntegrationMethod: GET
+      PayloadFormatVersion: "2.0"
+      IntegrationUri: !Sub "arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteTodoLambda.Arn}/invocations"
+
+  APIGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: API
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowMethods:
+          - "*"
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - "*"
+
+  APIGatewayStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref APIGateway
+      StageName: deploy
+      Description: Deploy Stage
+      AutoDeploy: true

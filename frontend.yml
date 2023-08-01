@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: EC2-cloudfront
+  SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Enable all traffic"
+      SecurityGroupIngress:
+        - IpProtocol: "-1"
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: "-1"
+          FromPort: 0
+          ToPort: 65535
+          CidrIpv6: "::/0"
+  CloudProjFrontend:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref KeyPair
+      ImageId: ami-053b0d53c279acc90
+      InstanceType: t2.medium
+      Monitoring: true
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo apt update
+          sudo apt-get install nginx -y 
+          sudo apt-get install curl -y
+          curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - 
+          sudo apt-get install -y nodejs
+          cd /var/www/html/
+          sudo git clone https://github.com/DhruvinDankhara/cloud-term-project.git
+          cd cloud-term-project/frontend
+          sudo npm install
+          sudo npm run build
+          sudo cp -r build/* /var/www/html
+          cd ../../
