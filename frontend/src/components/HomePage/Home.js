@@ -4,11 +4,13 @@ import classes from "./Home.module.css";
 import React, { useEffect, useState } from "react";
 import { PRIMARY_COLOR } from "../../services/constant";
 import {
+  SendAllTasksInEmail,
   createTodo,
   deleteTodo,
   fetchTodoApiCall,
   updateStatus,
 } from "../../services/apiCall";
+import ToastMessage from "../ToastMessage";
 
 export const Home = () => {
   const [newTask, setNewTask] = useState();
@@ -33,6 +35,17 @@ export const Home = () => {
         setTableData(updateIndexTableData);
         setNewTask("");
       }
+    }
+  };
+  const handleSendTodoInEmail = async () => {
+    const userId = localStorage.getItem("userId");
+    if (tableData.length > 0) {
+      const response = await SendAllTasksInEmail(userId);
+      if (response) {
+        ToastMessage("Email sent successfully");
+      }
+    } else {
+      ToastMessage("There is no task to send", "error");
     }
   };
 
@@ -154,7 +167,12 @@ export const Home = () => {
         <Divider />
         <div className={classes.container}>
           <div className={classes.task_title}>
-            <h1>Today's tasks</h1>
+            <div className={classes.add_task_send}>
+              <h1>Today's tasks</h1>
+              <Button type="primary" onClick={() => handleSendTodoInEmail()}>
+                Email All Tasks
+              </Button>
+            </div>
             <div className={classes.add_task}>
               <Input
                 onChange={(e) => setNewTask(e.target.value)}

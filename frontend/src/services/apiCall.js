@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 
 // const BASE_URL = "http://ec2-52-206-22-233.compute-1.amazonaws.com:3000";
 const BASE_URL =
-  "https://5t73f54rkf.execute-api.us-east-1.amazonaws.com/deploy";
+  "https://nxbxz03fh3.execute-api.us-east-1.amazonaws.com/deploy";
 
 // DONE
 export const loginApiCall = async (data) => {
@@ -90,6 +90,17 @@ export const createTodo = async (data) => {
       id: uuidv4(),
     };
     const response = await axios.post(`${BASE_URL}/todo/create`, payload);
+    console.log(response);
+    return response.data.data;
+  } catch (error) {
+    console.error(error);
+    return {};
+  }
+};
+
+export const SendAllTasksInEmail = async (userId) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/sendEmail?userId=${userId}`);
     console.log(response);
     return response.data.data;
   } catch (error) {

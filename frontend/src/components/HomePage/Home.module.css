@@ -31,3 +31,11 @@
     flex-direction: row;
     gap: 10px;
 }
+
+.add_task_send {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
