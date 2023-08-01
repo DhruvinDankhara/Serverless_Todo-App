@@ -3,7 +3,8 @@ const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcryptjs");
 
 // const BASE_URL = "http://ec2-52-206-22-233.compute-1.amazonaws.com:3000";
-const BASE_URL = "https://l67uggec83.execute-api.us-east-1.amazonaws.com/dev";
+const BASE_URL =
+  "https://5t73f54rkf.execute-api.us-east-1.amazonaws.com/deploy";
 
 // DONE
 export const loginApiCall = async (data) => {
@@ -33,7 +34,7 @@ export const signUpApiCall = async (data) => {
       userId: uuidv4(),
       // password: await bcrypt.hash(data.password, 10),
     };
-    const response = await axios.post(`${BASE_URL}/sign-up`, payload);
+    const response = await axios.post(`${BASE_URL}/signup`, payload);
     console.log(response.data);
     return response.data;
   } catch (error) {
@@ -57,7 +58,7 @@ export const fetchTodoApiCall = async () => {
 export const updateStatus = async (id, status) => {
   try {
     console.log(id, status);
-    const response = await axios.put(`${BASE_URL}/todo/update?todoId=${id}`, {
+    const response = await axios.put(`${BASE_URL}/todo?todoId=${id}`, {
       status: status,
     });
     return response.data;
@@ -69,7 +70,7 @@ export const updateStatus = async (id, status) => {
 
 export const deleteTodo = async (id) => {
   try {
-    const response = await axios.delete(`${BASE_URL}/todo/delete?todoId=${id}`);
+    const response = await axios.delete(`${BASE_URL}/todo?todoId=${id}`);
     return response.data;
   } catch (error) {
     console.error(error);
