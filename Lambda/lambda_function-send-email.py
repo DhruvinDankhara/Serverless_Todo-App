@@ -9,7 +9,7 @@ def lambda_handler(event, context):
     email = event['email']
     sns_topic_arn = os.environ['SNS_TOPIC_ARN']
     print(sns_topic_arn)
-    topic_arn = 'arn:aws:sns:us-east-1:012511742142:send_email'
+    topic_arn = sns_topic_arn
     endpoint = email
     protocol = 'email'  # Possible values: 'sms', 'email', 'http', 'https', 'application', 'lambda'
 

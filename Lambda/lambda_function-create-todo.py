@@ -40,12 +40,13 @@ def lambda_handler(event, context):
                 'createdAt': item["createdAt"]["S"],
                 'updatedAt': item["updatedAt"]["S"],
             })
-        print(python_data)
+        sorted_data = sorted(python_data, key=lambda x: x['createdAt'], reverse=True)
+        print(sorted_data)
         return {
           "statusCode" : 200,
           "body" : json.dumps({
                 'status': True,
-                'data': python_data
+                'data': sorted_data
           })
         }
     except Exception as e:
